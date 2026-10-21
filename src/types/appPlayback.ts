@@ -29,6 +29,10 @@ export type PlaybackNavigationOptions = {
      * the play waited and the play's queue was the store's, so the landing leaves the new queue standing.
      */
     queueRewritten?: () => boolean;
+    /** Load the requested song and leave its active media paused for a caller that needs readiness. */
+    startPaused?: boolean;
+    /** Position to apply before a paused preparation completes. */
+    preparePosition?: number;
 };
 
 export type NextTrackOptions = PlaybackNavigationOptions & {

@@ -15,12 +15,13 @@ import { currentTime } from '@/stores/motionSignals';
 import type { PanelTab } from '@/components/UnifiedPanel';
 import { clampMediaVolume } from '@/utils/appPlaybackHelpers';
 import { resolveLikeAvailability } from '@/utils/playerLikeAvailability';
-import { buildFoliumQueueSnapshot, resolveFoliumQueuePlayRequest } from './hostQueue';
+import { buildFoliumQueueSnapshot, getFoliumQueueVersion, resolveFoliumQueueKind, resolveFoliumQueuePlayRequest } from './hostQueue';
 import { canShuffleQueue } from '@/utils/playbackNeighbors';
 import { rerunLyricsTransform } from '@/services/hostExtensionHooks';
 import { resolveFoliumSongRef, toFoliumLines, toFoliumSong } from '../folium/dto';
 import { emitFoliumEvent } from '../folium/events';
 import { registerFoliumHostActions } from '../folium/services';
+import type { FoliumPrepareQueueItemResult } from '../folium/contract';
 import { showRefreshedLyrics } from './hostEvents';
 import { registerFoliumQueueWriter, replaceFoliumQueue } from './queue/hostQueueReplace';
 
@@ -44,6 +45,14 @@ export interface FoliumAppActions {
      * Personal FM on when `isFm`.
      */
     playQueueSong: (song: SongResult, queue: SongResult[], isFm: boolean) => void | Promise<void>;
+    prepareQueueSong?: (
+        song: SongResult,
+        queue: SongResult[],
+        isFm: boolean,
+        position: number,
+        commandId: string,
+        signal?: AbortSignal,
+    ) => Promise<FoliumPrepareQueueItemResult>;
     enqueue: (song: SongResult) => void;
     navigateToPlayer: () => void;
     navigateToHome: () => void;
@@ -143,6 +152,15 @@ export const useFoliumHostActions = (actions: FoliumAppActions) => {
                 if (!request) return false;
                 await actionsRef.current.playQueueSong(request.song, request.queue, request.isFm);
                 return true;
+            },
+            prepareQueueItem: async (index, expectedRef, expectedVersion, position, commandId, signal) => {
+                const state = usePlaybackStore.getState();
+                if (getFoliumQueueVersion(state) !== expectedVersion) return { ok: false, commandId, reason: 'stale-version' };
+                if (resolveFoliumQueueKind(state) === 'stage') return { ok: false, commandId, reason: 'stage-active' };
+                const request = resolveFoliumQueuePlayRequest(state, index, expectedRef);
+                if (!request) return { ok: false, commandId, reason: 'unavailable' };
+                if (!actionsRef.current.prepareQueueSong) return { ok: false, commandId, reason: 'unavailable' };
+                return actionsRef.current.prepareQueueSong(request.song, request.queue, request.isFm, position, commandId, signal);
             },
             replaceQueue: (modId, refs, expectedVersion) => replaceFoliumQueue(modId, refs, expectedVersion),
             toast: (message, type, durationMs) => setStatusMessage({ type, text: message, ...(durationMs ? { durationMs } : {}) }),

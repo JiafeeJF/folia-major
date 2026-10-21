@@ -13,6 +13,7 @@ import type {
     FoliumLyricsService,
     FoliumNetService,
     FoliumPlaybackService,
+    FoliumPrepareQueueItemResult,
     FoliumQueueReplaceResult,
     FoliumQueueSnapshot,
     FoliumSong,
@@ -58,6 +59,15 @@ export interface FoliumHostActions {
     getQueue: (offset: number | undefined, limit: number) => FoliumQueueSnapshot;
     /** False when the entry cannot be played: out of range, Stage playback, or no longer `expectedRef`. */
     playQueueItem: (index: number, expectedRef: string | undefined) => Promise<boolean>;
+    /** Loads a queue entry without audible playback; the host owns readiness and cancellation. */
+    prepareQueueItem?: (
+        index: number,
+        expectedRef: string | undefined,
+        expectedVersion: string,
+        position: number,
+        commandId: string,
+        signal?: AbortSignal,
+    ) => Promise<FoliumPrepareQueueItemResult>;
     /** Folium 1.7: `refs` are song refs (checked by the service); the host answers the state reasons itself. */
     replaceQueue: (modId: string, refs: readonly string[], expectedVersion: string) => FoliumQueueReplaceResult;
     toast: (message: string, type: 'info' | 'success' | 'error', durationMs?: number) => void;
@@ -200,6 +210,31 @@ export const createFoliumPlaybackService = (mod: ModRuntimeInfo, context: Folium
         playQueueItem: async (index: number, expectedRef?: string) => {
             if (!Number.isInteger(index)) throw new Error('playback.playQueueItem requires an integer index');
             return control().playQueueItem(index, expectedRef);
+        },
+        prepareQueueItem: async (index: number, options: Parameters<FoliumPlaybackService['prepareQueueItem']>[1]): Promise<FoliumPrepareQueueItemResult> => {
+            if (!Number.isInteger(index)) throw new Error('playback.prepareQueueItem requires an integer index');
+            if (!options || typeof options !== 'object') throw new TypeError('invalid-arguments: options must be an object');
+            if (typeof options.expectedVersion !== 'string' || options.expectedVersion === '') {
+                throw new TypeError('invalid-arguments: options.expectedVersion must be a string');
+            }
+            if (options.expectedRef !== undefined && typeof options.expectedRef !== 'string') {
+                throw new TypeError('invalid-arguments: options.expectedRef must be a string');
+            }
+            if (options.commandId !== undefined && typeof options.commandId !== 'string') {
+                throw new TypeError('invalid-arguments: options.commandId must be a string');
+            }
+            const position = options.position === undefined ? 0 : options.position;
+            if (!Number.isFinite(position) || position < 0) {
+                throw new TypeError('invalid-arguments: options.position must be a finite non-negative number');
+            }
+            if (options.signal !== undefined && typeof AbortSignal !== 'undefined' && !(options.signal instanceof AbortSignal)) {
+                throw new TypeError('invalid-arguments: options.signal must be an AbortSignal');
+            }
+            const commandId = options.commandId ?? `prepare-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            if (options.signal?.aborted) return { ok: false, commandId, reason: 'aborted' };
+            const actions = control();
+            if (!actions.prepareQueueItem) return { ok: false, commandId, reason: 'unavailable' };
+            return actions.prepareQueueItem(index, options.expectedRef, options.expectedVersion, position, commandId, options.signal);
         },
         // Checked in this order: the permission, the window, the arguments; the host answers the rest.
         replaceQueue: async (songs: readonly FoliumSong[], options: { expectedVersion: string }) => {

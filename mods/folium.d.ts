@@ -234,6 +234,23 @@ export interface FoliumSong {
 /** The host player state. */
 export type FoliumPlaybackState = 'playing' | 'paused' | 'stopped';
 
+/** The result of preparing a queue item without starting audible playback. */
+export type FoliumPrepareQueueItemResult =
+    | {
+        readonly ok: true;
+        readonly commandId: string;
+        readonly song: FoliumSong;
+        readonly position: number;
+        readonly queueVersion: string;
+        readonly mediaGeneration: number;
+        readonly loadState: 'ready';
+    }
+    | {
+        readonly ok: false;
+        readonly commandId: string;
+        readonly reason: 'stale-version' | 'stale-ref' | 'superseded' | 'aborted' | 'unavailable' | 'stage-active';
+    };
+
 /** The repeat mode. `all` repeats the queue, `one` the current song. */
 export type FoliumLoopMode = 'off' | 'all' | 'one';
 
@@ -1337,6 +1354,22 @@ export interface FoliumPlaybackService {
      * Needs `playback.control`.
      */
     playQueueItem(index: number, expectedRef?: string): Promise<boolean>;
+    /**
+     * Loads queue entry `index` and leaves it paused at `position` (default 0). The queue must still have
+     * `expectedVersion`, and `expectedRef` can additionally protect a repeated queue entry. The promise
+     * resolves only after the actual media reaches a playable ready state; it never starts audible playback.
+     * Needs `playback.control`.
+     */
+    prepareQueueItem(
+        index: number,
+        options: {
+            expectedVersion: string;
+            expectedRef?: string;
+            position?: number;
+            commandId?: string;
+            signal?: AbortSignal;
+        },
+    ): Promise<FoliumPrepareQueueItemResult>;
     /**
      * Folium 1.7: replaces the whole play queue with `songs` (by `ref`) in one step, if the queue is still the
      * one you read: `expectedVersion` is the `version` of your last `getQueue` page or `playback.queueChanged`

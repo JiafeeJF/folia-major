@@ -172,6 +172,8 @@ import { usePlayerBottomBarPositioningEntry } from './hooks/usePlayerBottomBarPo
 import { PlayerBottomBarLayoutContext } from './components/floating-player/PlayerBottomBarLayoutContext';
 import { useFoliumHostBridge } from './mods/runtime/hostBridge';
 import { useFoliumHostActions } from './mods/runtime/hostActions';
+import { toFoliumSong } from './mods/folium/dto';
+import { buildFoliumQueueSnapshot } from './mods/runtime/hostQueue';
 import { refreshPrefetchAfterQueueEdit } from './services/prefetchService';
 import { FoliumStageLayerSlot } from './mods/folium/registries/stageLayers';
 import { errorFields } from './utils/errorText';
@@ -1007,6 +1009,7 @@ export default function App() {
         addOnlineSongToQueue,
         addOnlineSongsToQueue,
         playSong,
+        prepareQueueItem,
         playOnlineQueueFromStart,
         handleQueueAddAndPlay,
         handleSearchOverlaySubmit,
@@ -2060,6 +2063,21 @@ export default function App() {
         previous: handlePrevTrack,
         playSong: (song) => playSong(song),
         playQueueSong: (song, queue, isFm) => playSong(song, queue, isFm),
+        prepareQueueSong: async (song, queue, isFm, position, commandId, signal) => {
+            const prepared = await prepareQueueItem(song, queue, isFm, position, signal);
+            if (!prepared.ok) return { ok: false, commandId, reason: prepared.reason };
+            const preparedSong = toFoliumSong(prepared.song);
+            if (!preparedSong) return { ok: false, commandId, reason: 'unavailable' };
+            return {
+                ok: true,
+                commandId,
+                song: preparedSong,
+                position: prepared.position,
+                queueVersion: buildFoliumQueueSnapshot(usePlaybackStore.getState(), 0, 500).version,
+                mediaGeneration: prepared.mediaGeneration,
+                loadState: 'ready',
+            };
+        },
         enqueue: addOnlineSongToQueue,
         navigateToPlayer,
         navigateToHome,

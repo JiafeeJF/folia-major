@@ -116,6 +116,15 @@ const fakeActions = () => ({
     getLoopMode: vi.fn(() => 'all' as const), setLoopMode: vi.fn(),
     getQueue: vi.fn(() => ({ items: [], length: 0, currentIndex: -1, kind: 'queue' as const, version: 'v' })),
     playQueueItem: vi.fn(async () => true),
+    prepareQueueItem: vi.fn(async (_index: number, _expectedRef: string | undefined, _expectedVersion: string, _position: number, commandId: string) => ({
+        ok: true as const,
+        commandId,
+        song: { id: 'song-1', title: 't', artist: '', album: null, source: 'netease', ref: 'song-ref-1' },
+        position: 0,
+        queueVersion: 'v',
+        mediaGeneration: 1,
+        loadState: 'ready' as const,
+    })),
     replaceQueue: vi.fn(() => ({ status: 'replaced' as const, version: 'v2', length: 0, currentIndex: -1 })),
     toast: vi.fn(), openPlayerPanel: vi.fn(), navigate: vi.fn(), openVolume: vi.fn(),
     getLyricLines: () => [], refreshLyrics: vi.fn(),
@@ -240,6 +249,24 @@ describe('folium services', () => {
         expect(actions.playQueueItem).toHaveBeenCalledTimes(2);
         const exported = createFoliumPlaybackService(mod({ permissions: ['playback.control'] }), 'export');
         await expect(exported.playQueueItem(0)).rejects.toThrow('playback-unavailable-in-export-context');
+    });
+
+    it('prepares a queue entry paused, validates its options, and preserves cancellation', async () => {
+        const actions = fakeActions();
+        registerFoliumHostActions(actions);
+        const control = createFoliumPlaybackService(mod({ permissions: ['playback.control'] }), 'main');
+        const signal = new AbortController().signal;
+        await expect(control.prepareQueueItem(4, {
+            expectedVersion: 'v', expectedRef: 'song-ref-1', position: 12.5, commandId: 'cmd-1', signal,
+        })).resolves.toMatchObject({ ok: true, commandId: 'cmd-1', position: 0 });
+        expect(actions.prepareQueueItem).toHaveBeenCalledWith(4, 'song-ref-1', 'v', 12.5, 'cmd-1', signal);
+        await expect(control.prepareQueueItem(0, { expectedVersion: '' })).rejects.toThrow('options.expectedVersion must be a string');
+        await expect(control.prepareQueueItem(0, { expectedVersion: 'v', position: -1 })).rejects.toThrow('options.position must be a finite non-negative number');
+        const cancelled = new AbortController();
+        cancelled.abort();
+        await expect(control.prepareQueueItem(0, { expectedVersion: 'v', signal: cancelled.signal })).resolves.toMatchObject({ ok: false, reason: 'aborted' });
+        const exported = createFoliumPlaybackService(mod({ permissions: ['playback.control'] }), 'export');
+        await expect(exported.prepareQueueItem(0, { expectedVersion: 'v' })).rejects.toThrow('playback-unavailable-in-export-context');
     });
 
     it('opens the volume panel without a permission', () => {

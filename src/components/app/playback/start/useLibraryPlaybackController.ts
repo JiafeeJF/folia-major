@@ -38,7 +38,7 @@ import { getProviderCacheKey } from '../../../../services/onlineMusic/providerSt
 import { getNavidromeConfig, navidromeApi } from '../../../../services/navidromeService';
 import { notifyPlaybackFailed } from '../../../../services/hostExtensionHooks';
 import { wholeQueueWritesSoFar } from '../../../../services/wholeQueueWrites';
-import type { LyricData, LocalPlaylist, LocalSong, OnlineLyricsState, QueueAddBehavior, SongResult, StatusMessage } from '../../../../types';
+import { PlayerState, type LyricData, type LocalPlaylist, type LocalSong, type OnlineLyricsState, type QueueAddBehavior, type SongResult, type StatusMessage } from '../../../../types';
 import type { AudioQualityPreference, MediaId, ProviderCollection } from '../../../../types/onlineMusic';
 import type { PlaybackSnapshot, PlaybackNavigationOptions } from '../../../../types/appPlayback';
 import { getNavidromeMatchCacheKey, type NavidromeMatchData, type NavidromeSong } from '../../../../types/navidrome';
@@ -53,7 +53,7 @@ import { buildLocalSongLyricMatchContext, shouldRefreshLocalSongLyricsFromMetada
 import { getLocalLibraryCatalogSnapshot } from '../../../../services/localLibraryEntityRepository';
 import { setStatusMessage as setStatusMsg } from '../../../../stores/useStatusMessageStore';
 import { useLyricSettingsStore } from '../../../../stores/useLyricSettingsStore';
-import { setActiveLocalLyricsSource, setAudioSrc, setCachedCoverUrl, setCurrentLineIndex, setCurrentSong, setPlayQueue, startLoadingToPlay } from '../../../../stores/usePlaybackStore';
+import { setActiveLocalLyricsSource, setAudioSrc, setCachedCoverUrl, setCurrentLineIndex, setCurrentSong, setPlayQueue, setPlayerState, startLoadingToPlay } from '../../../../stores/usePlaybackStore';
 import { askedSongKeyRef, askForSong, playsDroppedSoFar, replaceShownSong, showSong, startPlay } from '../currentSong';
 import { loadLocalSongAudio, loadNavidromeSongAudio } from '../source/songAudioSource';
 import { supplyLyricsAfterEmptyLoad } from '../createLyricsSetter';
@@ -705,15 +705,17 @@ export function useLibraryPlaybackController({
             retireBlobUrl(null);
         }
 
-        shouldAutoPlayRef.current = true;
+        shouldAutoPlayRef.current = options.startPaused === true ? false : true;
         askForSong(initialMeta.unifiedSong);
         // A new song starts at its beginning: a time to resume at was left for another song.
-        pendingResumeTimeRef.current = null;
+        pendingResumeTimeRef.current = options.startPaused === true
+            ? Math.max(0, options.preparePosition ?? 0)
+            : null;
         lastAudioRecoverySourceRef.current = null;
         setLyrics(initialMeta.lyrics);
         setActiveLocalLyricsSource(initialMeta.lyricsSource);
         setCurrentLineIndex(-1);
-        currentTime.set(0);
+        currentTime.set(options.startPaused === true ? Math.max(0, options.preparePosition ?? 0) : 0);
         showSong(initialMeta.unifiedSong);
         setAudioSrc(playbackUrl);
 
@@ -746,7 +748,11 @@ export function useLibraryPlaybackController({
         if (options.shouldNavigateToPlayer ?? true) {
             navigateToPlaybackView();
         }
-        startLoadingToPlay();
+        if (options.startPaused === true) {
+            setPlayerState(PlayerState.PAUSED);
+        } else {
+            startLoadingToPlay();
+        }
         if (shouldReportShiftedLyricFile(preparedLocalSong, initialMeta.lyricsSource)) {
             setStatusMsg({
                 type: 'info',
@@ -1026,14 +1032,16 @@ export function useLibraryPlaybackController({
             });
             const recoveredRepresentation = audio.recoveredCopy(unifiedSong);
 
-            shouldAutoPlayRef.current = true;
+            shouldAutoPlayRef.current = options.startPaused === true ? false : true;
             askForSong(unifiedSong);
             // A new song starts at its beginning: a time to resume at was left for another song.
-            pendingResumeTimeRef.current = null;
+            pendingResumeTimeRef.current = options.startPaused === true
+                ? Math.max(0, options.preparePosition ?? 0)
+                : null;
             lastAudioRecoverySourceRef.current = null;
             setLyrics(nextLyrics);
             setCurrentLineIndex(-1);
-            currentTime.set(0);
+            currentTime.set(options.startPaused === true ? Math.max(0, options.preparePosition ?? 0) : 0);
             showSong(unifiedSong);
             setManagedCachedCoverUrl(coverUrl ?? null);
             setAudioSrc(recoveredRepresentation?.url ?? audio.streamUrl);
@@ -1057,7 +1065,11 @@ export function useLibraryPlaybackController({
             if (shouldNavigateToPlayer) {
                 navigateToPlaybackView();
             }
-            startLoadingToPlay();
+            if (options.startPaused === true) {
+                setPlayerState(PlayerState.PAUSED);
+            } else {
+                startLoadingToPlay();
+            }
             setStatusMsg({ type: 'success', text: t('status.navidromeSongLoaded')});
             void restoreCachedThemeForSong(unifiedSong).catch((error) => {
                 console.warn('Theme load error', error);

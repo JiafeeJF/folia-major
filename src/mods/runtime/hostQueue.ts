@@ -29,6 +29,11 @@ export const findFoliumQueueCurrentIndex = (state: PlaybackStoreState): number =
     return state.playQueue.findIndex((song) => getPlaybackSongKey(song) === key);
 };
 
+/** The queue version is independent of paging; command handlers use this to validate any index. */
+export const getFoliumQueueVersion = (state: PlaybackStoreState): string => (
+    readFoliumQueueVersion(state.playQueue, resolveFoliumQueueKind(state))
+);
+
 /*
  * One page of the queue. Without an offset the page is centred on the
  * displayed song (clamped so it never runs past either end; from the top when

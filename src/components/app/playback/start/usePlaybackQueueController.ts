@@ -156,6 +156,15 @@ type UsePlaybackQueueControllerParams = {
 const MAX_UNAVAILABLE_AUTO_SKIP_COUNT = 2;
 const UNAVAILABLE_SKIP_CONFIRM_TIMEOUT_MS = 5000;
 const UNAVAILABLE_SKIP_CONFIRM_INTERVAL_MS = 1000;
+export type PreparedPlaybackResult = {
+    ok: true;
+    song: SongResult;
+    position: number;
+    mediaGeneration: number;
+} | {
+    ok: false;
+    reason: 'superseded' | 'aborted' | 'unavailable' | 'stage-active';
+};
 // The nonce of a skip prompt's toast: one toast for the whole count, and a new one for the next song's,
 // even when it says the same.
 let skipPromptCount = 0;
@@ -734,6 +743,8 @@ export function usePlaybackQueueController({
                 shouldNavigateToPlayer,
                 unifiedQueue: newQueue,
                 queueRewritten,
+                startPaused: options.startPaused,
+                preparePosition: options.preparePosition,
             });
             return;
         }
@@ -755,6 +766,8 @@ export function usePlaybackQueueController({
                 shouldNavigateToPlayer,
                 unifiedQueue: newQueue,
                 queueRewritten,
+                startPaused: options.startPaused,
+                preparePosition: options.preparePosition,
             });
             return;
         }
@@ -831,13 +844,15 @@ export function usePlaybackQueueController({
 
         // Written only now: a play that gave up above leaves the intent to play, the time to resume
         // at and the address's fetch time to the song the key went back to.
-        shouldAutoPlayRef.current = true;
-        pendingResumeTimeRef.current = null;
+        shouldAutoPlayRef.current = options.startPaused === true ? false : true;
+        pendingResumeTimeRef.current = options.startPaused === true
+            ? Math.max(0, options.preparePosition ?? 0)
+            : null;
         lastAudioRecoverySourceRef.current = null;
         currentOnlineAudioUrlFetchedAtRef.current = null;
         setLyrics(null);
         setCurrentLineIndex(-1);
-        currentTime.set(0);
+        currentTime.set(options.startPaused === true ? Math.max(0, options.preparePosition ?? 0) : 0);
         setDuration(0);
         showSong({ ...resolvedSong, onlineLyricsState: onlineLyricsState ?? undefined });
         setCachedCoverUrl(null);
@@ -897,6 +912,9 @@ export function usePlaybackQueueController({
         // every address that is not a blob).
         currentOnlineAudioUrlFetchedAtRef.current = audioResult.audioSrc.startsWith('http') ? audioResult.fetchedAt : null;
         setAudioSrc(audioResult.audioSrc);
+        if (options.startPaused === true) {
+            setPlayerState(PlayerState.PAUSED);
+        }
 
         try {
             await loadOnlineSongLyrics(song, prefetched, userId, {
@@ -1221,6 +1239,46 @@ export function usePlaybackQueueController({
             });
         }
     }, [currentSong, endHeldTransition, getDisplaySong, isFmMode, isNowPlayingStageActive, loopMode, playQueue, playSong, shouldNavigateToPlayerOnTrackChange]);
+
+    const prepareQueueItem = useCallback(async (
+        song: SongResult,
+        queue: SongResult[],
+        isFmCall: boolean,
+        position: number,
+        signal: AbortSignal | undefined,
+    ): Promise<PreparedPlaybackResult> => {
+        if (isNowPlayingStageActive) return { ok: false, reason: 'stage-active' };
+        if (signal?.aborted) return { ok: false, reason: 'aborted' };
+        const task = playSong(song, queue, isFmCall, {
+            shouldNavigateToPlayer: false,
+            startPaused: true,
+            preparePosition: position,
+        });
+        const requestId = playSongCallIdRef.current;
+        await task;
+        if (signal?.aborted) return { ok: false, reason: 'aborted' };
+        if (playSongCallIdRef.current !== requestId) return { ok: false, reason: 'superseded' };
+
+        const deadline = Date.now() + 30_000;
+        while (Date.now() < deadline) {
+            if (signal?.aborted) return { ok: false, reason: 'aborted' };
+            if (playSongCallIdRef.current !== requestId) return { ok: false, reason: 'superseded' };
+            const audio = audioRef.current;
+            const liveSong = usePlaybackStore.getState().currentSong;
+            if (audio && liveSong && getPlaybackSongKey(liveSong) === getPlaybackSongKey(song) && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+                audio.pause();
+                const safePosition = Number.isFinite(audio.duration) && audio.duration > 0
+                    ? Math.min(position, Math.max(0, audio.duration - 0.05))
+                    : position;
+                if (Math.abs(audio.currentTime - safePosition) > 0.05) audio.currentTime = safePosition;
+                shouldAutoPlayRef.current = false;
+                setPlayerState(PlayerState.PAUSED);
+                return { ok: true, song, position: safePosition, mediaGeneration: requestId };
+            }
+            await new Promise<void>(resolve => window.setTimeout(resolve, 50));
+        }
+        return { ok: false, reason: 'unavailable' };
+    }, [audioRef, isNowPlayingStageActive, playSong, setPlayerState, shouldAutoPlayRef]);
 
     // A failure's buttons may be pressed long after: they call the newest handleNextTrack / playSong, with
     // the queue of that moment. The failures of playSong use it too; their closures read `.current` only
@@ -1649,6 +1707,7 @@ export function usePlaybackQueueController({
         handleUnavailableReplacementConfirm,
         handleNextTrack,
         handlePrevTrack,
+        prepareQueueItem,
         skipAfterPlaybackFailure,
         handleStageExternalPlayRequest,
         shuffleQueue,
