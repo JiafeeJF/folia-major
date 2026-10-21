@@ -21,6 +21,7 @@ import { rerunLyricsTransform } from '@/services/hostExtensionHooks';
 import { resolveFoliumSongRef, toFoliumLines, toFoliumSong } from '../folium/dto';
 import { emitFoliumEvent } from '../folium/events';
 import { registerFoliumHostActions } from '../folium/services';
+import type { FoliumPlaybackCommandResult, FoliumTransportSnapshot } from '../folium/contract';
 import { showRefreshedLyrics } from './hostEvents';
 import { registerFoliumQueueWriter, replaceFoliumQueue } from './queue/hostQueueReplace';
 
@@ -30,6 +31,7 @@ import { registerFoliumQueueWriter, replaceFoliumQueue } from './queue/hostQueue
 // calls App's latest callbacks without re-registering on every render.
 
 export interface FoliumAppActions {
+    getTransportState?: () => FoliumTransportSnapshot;
     play: () => void;
     pause: () => void;
     toggle: () => void;
@@ -37,6 +39,10 @@ export interface FoliumAppActions {
     seekToLyricTime: (lyricSeconds: number) => void;
     next: () => void;
     previous: () => void;
+    clearCurrent?: (commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    pauseAt?: (seconds: number, commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    setPlaybackRate?: (rate: number, commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    resetPlaybackRate?: (commandId: string) => Promise<FoliumPlaybackCommandResult>;
     playSong: (song: SongResult) => void | Promise<void>;
     /**
      * playQueueItem: plays `song` within `queue`, which must be the store's playQueue array itself
@@ -98,6 +104,11 @@ export const useFoliumHostActions = (actions: FoliumAppActions) => {
                     canLike: canLike(state),
                 };
             },
+            getTransportState: () => actionsRef.current.getTransportState?.() ?? {
+                mediaSong: toFoliumSong(usePlaybackStore.getState().currentSong),
+                state: selectDisplayPlayerState(usePlaybackStore.getState()) === PlayerState.PLAYING ? 'playing' : selectDisplayPlayerState(usePlaybackStore.getState()) === PlayerState.PAUSED ? 'paused' : 'idle',
+                position: currentTime.get(), duration: selectDisplayDuration(usePlaybackStore.getState()), generation: 0, transitioning: false,
+            },
             play: () => actionsRef.current.play(),
             pause: () => actionsRef.current.pause(),
             toggle: () => actionsRef.current.toggle(),
@@ -105,6 +116,10 @@ export const useFoliumHostActions = (actions: FoliumAppActions) => {
             seekToLyricTime: (lyricSeconds) => actionsRef.current.seekToLyricTime(lyricSeconds),
             next: () => actionsRef.current.next(),
             previous: () => actionsRef.current.previous(),
+            clearCurrent: (commandId) => actionsRef.current.clearCurrent?.(commandId) ?? Promise.resolve({ ok: false, commandId, reason: 'unsupported', snapshot: actionsRef.current.getTransportState?.() ?? { mediaSong: null, state: 'idle', position: 0, duration: 0, generation: 0, transitioning: false } }),
+            pauseAt: (seconds, commandId) => actionsRef.current.pauseAt?.(seconds, commandId) ?? Promise.resolve({ ok: false, commandId, reason: 'unsupported', snapshot: actionsRef.current.getTransportState?.() ?? { mediaSong: null, state: 'idle', position: 0, duration: 0, generation: 0, transitioning: false } }),
+            setPlaybackRate: (rate, commandId) => actionsRef.current.setPlaybackRate?.(rate, commandId) ?? Promise.resolve({ ok: false, commandId, reason: 'unsupported', snapshot: actionsRef.current.getTransportState?.() ?? { mediaSong: null, state: 'idle', position: 0, duration: 0, generation: 0, transitioning: false } }),
+            resetPlaybackRate: (commandId) => actionsRef.current.resetPlaybackRate?.(commandId) ?? Promise.resolve({ ok: false, commandId, reason: 'unsupported', snapshot: actionsRef.current.getTransportState?.() ?? { mediaSong: null, state: 'idle', position: 0, duration: 0, generation: 0, transitioning: false } }),
             playSongRef: async (ref) => {
                 const song = resolveFoliumSongRef(ref);
                 if (!song) return false;

@@ -33,6 +33,7 @@ export const FOLIUM_EVENT_TYPES = {
     'playback.songChanged': { dispatch: 'notification', experimental: null },
     'playback.stateChanged': { dispatch: 'notification', experimental: null },
     'playback.seeked': { dispatch: 'notification', experimental: null },
+    'playback.ended': { dispatch: 'notification', experimental: null },
     'lyrics.loaded': { dispatch: 'notification', experimental: null },
     'app.viewChanged': { dispatch: 'notification', experimental: null },
     'visualizer.modeChanged': { dispatch: 'notification', experimental: null },
@@ -46,6 +47,7 @@ export const FOLIUM_EVENT_TYPES = {
     'equalizer.changed': { dispatch: 'notification', experimental: null },
     'lyrics.transform': { dispatch: 'hook', experimental: null },
     'playback.beforePlay': { dispatch: 'hook', experimental: null },
+    'playback.beforeAutoAdvance': { dispatch: 'hook', experimental: null },
     'omni.lyricsResolved': { dispatch: 'hook', experimental: 'omni.hooks' },
     'omni.audioSourceResolved': { dispatch: 'hook', experimental: 'omni.hooks' },
 } as const satisfies Record<keyof FoliumEventMap, FoliumEventType>;

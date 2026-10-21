@@ -13,6 +13,8 @@ import type {
     FoliumLyricsService,
     FoliumNetService,
     FoliumPlaybackService,
+    FoliumPlaybackCommandResult,
+    FoliumTransportSnapshot,
     FoliumQueueReplaceResult,
     FoliumQueueSnapshot,
     FoliumSong,
@@ -33,6 +35,7 @@ import { FOLIUM_LYRICS_HELPERS } from './sharedHelpers';
 
 export interface FoliumHostActions {
     getPlaybackState: () => ReturnType<FoliumPlaybackService['getState']>;
+    getTransportState?: () => FoliumTransportSnapshot;
     play: () => void;
     pause: () => void;
     toggle: () => void;
@@ -58,6 +61,10 @@ export interface FoliumHostActions {
     getQueue: (offset: number | undefined, limit: number) => FoliumQueueSnapshot;
     /** False when the entry cannot be played: out of range, Stage playback, or no longer `expectedRef`. */
     playQueueItem: (index: number, expectedRef: string | undefined) => Promise<boolean>;
+    clearCurrent?: (commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    pauseAt?: (seconds: number, commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    setPlaybackRate?: (rate: number, commandId: string) => Promise<FoliumPlaybackCommandResult>;
+    resetPlaybackRate?: (commandId: string) => Promise<FoliumPlaybackCommandResult>;
     /** Folium 1.7: `refs` are song refs (checked by the service); the host answers the state reasons itself. */
     replaceQueue: (modId: string, refs: readonly string[], expectedVersion: string) => FoliumQueueReplaceResult;
     toast: (message: string, type: 'info' | 'success' | 'error', durationMs?: number) => void;
@@ -133,6 +140,15 @@ const resolveQueuePage = (options: { offset?: number; limit?: number } | undefin
 
 const invalidArguments = (problem: string) => new TypeError(`invalid-arguments: ${problem}`);
 
+const createUnavailableTransportSnapshot = (state: ReturnType<FoliumPlaybackService['getState']>): FoliumTransportSnapshot => ({
+    mediaSong: state.song,
+    state: state.state === 'playing' ? 'playing' : state.state === 'paused' ? 'paused' : 'idle',
+    position: state.position,
+    duration: state.duration,
+    generation: 0,
+    transitioning: false,
+});
+
 /*
  * replaceQueue's arguments, checked: an array of at most one ref pool's worth of song DTOs from the host,
  * and a version string. A DTO of another kind (a folium.omni album, an object made up by the mod) is a
@@ -162,6 +178,12 @@ export const createFoliumPlaybackService = (mod: ModRuntimeInfo, context: Folium
     };
     return Object.freeze({
         getState: () => requireActions('playback', context).getPlaybackState(),
+        getTransportState: () => {
+            const actions = requireActions('playback', context);
+            if (actions.getTransportState) return actions.getTransportState();
+            const state = actions.getPlaybackState();
+            return { mediaSong: state.song, state: (state.state === 'playing' ? 'playing' : state.state === 'paused' ? 'paused' : 'idle') as FoliumTransportSnapshot['state'], position: state.position, duration: state.duration, generation: 0, transitioning: false };
+        },
         play: () => control().play(),
         pause: () => control().pause(),
         toggle: () => control().toggle(),
@@ -200,6 +222,29 @@ export const createFoliumPlaybackService = (mod: ModRuntimeInfo, context: Folium
         playQueueItem: async (index: number, expectedRef?: string) => {
             if (!Number.isInteger(index)) throw new Error('playback.playQueueItem requires an integer index');
             return control().playQueueItem(index, expectedRef);
+        },
+        clearCurrent: async (options: { commandId?: string } = {}) => {
+            const commandId = options.commandId ?? `clear-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const actions = control();
+            return actions.clearCurrent ? actions.clearCurrent(commandId) : { ok: false as const, commandId, reason: 'unsupported' as const, snapshot: createUnavailableTransportSnapshot(actions.getPlaybackState()) };
+        },
+        pauseAt: async (seconds: number, options: { commandId?: string } = {}) => {
+            if (!Number.isFinite(seconds)) throw new Error('playback.pauseAt requires a finite number of seconds');
+            const commandId = options.commandId ?? `pause-at-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const actions = control();
+            return actions.pauseAt ? actions.pauseAt(Math.max(0, seconds), commandId) : { ok: false as const, commandId, reason: 'unsupported' as const, snapshot: createUnavailableTransportSnapshot(actions.getPlaybackState()) };
+        },
+        setPlaybackRate: async (rate: number, options: { commandId?: string } = {}) => {
+            if (!Number.isFinite(rate)) throw new Error('playback.setPlaybackRate requires a finite rate');
+            if (rate < 0.98 || rate > 1.02) throw new Error('playback.setPlaybackRate only accepts rates from 0.98 to 1.02');
+            const commandId = options.commandId ?? `rate-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const actions = control();
+            return actions.setPlaybackRate ? actions.setPlaybackRate(rate, commandId) : { ok: false as const, commandId, reason: 'unsupported' as const, snapshot: createUnavailableTransportSnapshot(actions.getPlaybackState()) };
+        },
+        resetPlaybackRate: async (options: { commandId?: string } = {}) => {
+            const commandId = options.commandId ?? `rate-reset-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const actions = control();
+            return actions.resetPlaybackRate ? actions.resetPlaybackRate(commandId) : { ok: false as const, commandId, reason: 'unsupported' as const, snapshot: createUnavailableTransportSnapshot(actions.getPlaybackState()) };
         },
         // Checked in this order: the permission, the window, the arguments; the host answers the rest.
         replaceQueue: async (songs: readonly FoliumSong[], options: { expectedVersion: string }) => {

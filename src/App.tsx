@@ -149,7 +149,7 @@ import { useSettingsModalStore } from './stores/useSettingsModalStore';
 import { audioBands, audioPower, bass, currentTime, lowMid, lyricCurrentTime, mid, spectrum, treble, vocal } from './stores/motionSignals';
 import { useAppChromeStore } from './stores/useAppChromeStore';
 import { useAppViewStore } from './stores/useAppViewStore';
-import { endLoadingToPlay, selectDisplayCoverUrl, selectDisplayDuration, selectDisplayLyrics, selectDisplayPlayerState, selectDisplaySong, selectIsShowingTail, usePlaybackStore } from './stores/usePlaybackStore';
+import { endLoadingToPlay, selectDisplayCoverUrl, selectDisplayDuration, selectDisplayLyrics, selectDisplayPlayerState, selectDisplaySong, selectIsShowingTail, setCurrentLineIndex, usePlaybackStore } from './stores/usePlaybackStore';
 import { askForSong, showSong } from './components/app/playback/currentSong';
 import { useLibraryStore } from './stores/useLibraryStore';
 import { selectLibraryOccludesPlayer, selectLibraryPlayerBackdrop, useLibraryPlayerOcclusionStore } from './stores/useLibraryPlayerOcclusionStore';
@@ -172,10 +172,15 @@ import { usePlayerBottomBarPositioningEntry } from './hooks/usePlayerBottomBarPo
 import { PlayerBottomBarLayoutContext } from './components/floating-player/PlayerBottomBarLayoutContext';
 import { useFoliumHostBridge } from './mods/runtime/hostBridge';
 import { useFoliumHostActions } from './mods/runtime/hostActions';
+import { toFoliumSong } from './mods/folium/dto';
+import type { FoliumPlaybackCommandResult, FoliumTransportSnapshot } from './mods/folium/contract';
+import { dispatchFoliumHookSync, emitFoliumEvent } from './mods/folium/events';
+import { withPlaybackCommand } from './mods/runtime/playbackCommandContext';
 import { refreshPrefetchAfterQueueEdit } from './services/prefetchService';
 import { FoliumStageLayerSlot } from './mods/folium/registries/stageLayers';
 import { errorFields } from './utils/errorText';
 import { runsOnWindows } from './utils/platform';
+import { retireBlobUrl } from './services/playbackBlobUrls';
 
 const LOCAL_MUSIC_UPDATED_EVENT = 'folia-local-music-updated';
 const DEV_DEBUG_SHORTCUT_LABEL = 'Alt+Shift+D';
@@ -372,6 +377,10 @@ export default function App() {
         lastAudioRecoverySourceRef,
         currentOnlineAudioUrlFetchedAtRef,
     } = usePlaybackRuntimeRefs();
+    const transportGenerationRef = useRef(0);
+    useEffect(() => {
+        transportGenerationRef.current += 1;
+    }, [currentSong]);
     // The automix decks are set up much further down, but a few reset paths declared above here
     // need to be able to stop a transition, and queue navigation needs the track being SHOWN. A ref
     // keeps both reachable without reordering them; it is reassigned on every render, so the
@@ -1120,6 +1129,21 @@ export default function App() {
         return () => registerLocalTrackFileReader(null);
     }, [getLocalStemBytes]);
 
+    const beforeAutoAdvance = (reason: 'ended' | 'automix' | 'gapless', audio?: HTMLAudioElement) => {
+        const song = toFoliumSong(usePlaybackStore.getState().currentSong);
+        if (!song) return false;
+        let cancelled = false;
+        dispatchFoliumHookSync('playback.beforeAutoAdvance', {
+            song,
+            reason,
+            position: Number.isFinite(audio?.currentTime) ? audio!.currentTime : Math.max(0, currentTime.get()),
+            duration: Number.isFinite(audio?.duration) ? audio!.duration : Math.max(0, usePlaybackStore.getState().duration),
+            get cancelled() { return cancelled; },
+            cancel: () => { cancelled = true; },
+        });
+        return cancelled;
+    };
+
     const automix = useAutomixDecks({
         audioRef,
         audioContextRef,
@@ -1129,6 +1153,10 @@ export default function App() {
         isEnabled: automixEnabled && !isNowPlayingStageActive,
         transition: transitionSettings,
         onAdvanceTrack: () => {
+            if (beforeAutoAdvance('automix', audioRef.current ?? undefined)) {
+                automixRef.current?.abortTransition();
+                return;
+            }
             // Same advance the end of a track would trigger, only early enough for the outgoing
             // deck to still be sounding when the next one starts. `fromSong` because this IS the
             // advance: it steps from the track the app is on, never from the held picture, and
@@ -2049,8 +2077,95 @@ export default function App() {
         syncStageLyricsClock,
     ]);
 
+    const getTransportState = (): FoliumTransportSnapshot => {
+        const audio = audioRef.current;
+        const state = usePlaybackStore.getState();
+        let transport: FoliumTransportSnapshot['state'] = 'idle';
+        if (audio?.error) transport = 'error';
+        else if (audio?.seeking) transport = 'seeking';
+        else if (state.isLoadingToPlay || (audio && audio.readyState < HTMLMediaElement.HAVE_METADATA)) transport = 'loading';
+        else if (audio && !audio.paused && !audio.ended) transport = 'playing';
+        else if (audio && audio.readyState >= HTMLMediaElement.HAVE_METADATA) transport = 'paused';
+        return Object.freeze({
+            mediaSong: toFoliumSong(state.currentSong),
+            state: transport,
+            position: Number.isFinite(audio?.currentTime) ? audio!.currentTime : Math.max(0, currentTime.get()),
+            duration: Number.isFinite(audio?.duration) ? audio!.duration : Math.max(0, state.duration),
+            generation: transportGenerationRef.current,
+            transitioning: automix.isTransitionAudible(),
+        });
+    };
+    const commandResult = (commandId: string, ok: boolean, reason?: FoliumPlaybackCommandResult['reason']): FoliumPlaybackCommandResult => ({
+        ok,
+        commandId,
+        ...(reason ? { reason } : {}),
+        snapshot: getTransportState(),
+    });
+    const clearCurrent = async (commandId: string): Promise<FoliumPlaybackCommandResult> => {
+        if (isNowPlayingStageActive) return commandResult(commandId, false, 'stage-active');
+        return withPlaybackCommand(commandId, () => {
+            shouldAutoPlay.current = false;
+            pendingResumeTimeRef.current = null;
+            automix.abortTransition();
+            const audio = audioRef.current;
+            const hadMedia = Boolean(audio || usePlaybackStore.getState().currentSong || usePlaybackStore.getState().audioSrc);
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.removeAttribute('src');
+                audio.load();
+            }
+            retireBlobUrl(blobUrlRef.current);
+            blobUrlRef.current = null;
+            setAudioSrc(null);
+            setCurrentSong(null);
+            setLyricsState(null);
+            setCachedCoverUrl(null);
+            setDuration(0);
+            setCurrentLineIndex(-1);
+            setIsLyricsLoading(false);
+            currentTime.set(0);
+            setPlayerState(PlayerState.IDLE);
+            return commandResult(commandId, hadMedia);
+        });
+    };
+    const pauseAt = async (seconds: number, commandId: string): Promise<FoliumPlaybackCommandResult> => {
+        if (isNowPlayingStageActive) return commandResult(commandId, false, 'stage-active');
+        const audio = cancelBlendToDisplayedTrack(false) ?? audioRef.current;
+        if (!audio || !usePlaybackStore.getState().currentSong) return commandResult(commandId, false, 'no-media');
+        return withPlaybackCommand(commandId, () => {
+            shouldAutoPlay.current = false;
+            playbackFade.cancelPendingPause();
+            audio.pause();
+            const target = Number.isFinite(audio.duration) && audio.duration > 0
+                ? Math.min(seconds, Math.max(0, audio.duration - 0.05))
+                : seconds;
+            audio.currentTime = target;
+            currentTime.set(target);
+            setPlayerState(PlayerState.PAUSED);
+            return commandResult(commandId, true);
+        });
+    };
+    const setPlaybackRate = async (rate: number, commandId: string): Promise<FoliumPlaybackCommandResult> => {
+        if (isNowPlayingStageActive) return commandResult(commandId, false, 'stage-active');
+        const audio = audioRef.current;
+        if (!audio) return commandResult(commandId, false, 'no-media');
+        try {
+            audio.playbackRate = rate;
+        } catch {
+            return commandResult(commandId, false, 'unsupported');
+        }
+        return commandResult(commandId, true);
+    };
+    const resetPlaybackRate = async (commandId: string): Promise<FoliumPlaybackCommandResult> => {
+        const audio = audioRef.current;
+        if (audio) audio.playbackRate = 1;
+        return commandResult(commandId, true);
+    };
+
     // Folium services (folium.playback / folium.ui) call through to these App handlers.
     useFoliumHostActions({
+        getTransportState,
         play: resumePlayback,
         pause: pausePlayback,
         toggle: () => togglePlay(),
@@ -2058,6 +2173,10 @@ export default function App() {
         seekToLyricTime: handleMonetLyricLineSeek,
         next: () => { void handleNextTrack(); },
         previous: handlePrevTrack,
+        clearCurrent,
+        pauseAt,
+        setPlaybackRate,
+        resetPlaybackRate,
         playSong: (song) => playSong(song),
         playQueueSong: (song, queue, isFm) => playSong(song, queue, isFm),
         enqueue: addOnlineSongToQueue,
@@ -2568,9 +2687,23 @@ export default function App() {
                     return;
                 }
 
+                const endedSong = toFoliumSong(currentSong);
+                if (endedSong) {
+                    emitFoliumEvent('playback.ended', {
+                        song: endedSong,
+                        position: Math.max(0, e.currentTarget.currentTime),
+                        duration: Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : Math.max(0, duration),
+                    });
+                }
+
                 // If single loop is active, native loop handles it.
                 // If not, we handle queue logic.
                 if (effectiveLoopMode !== 'one') {
+                    if (beforeAutoAdvance('ended', e.currentTarget)) {
+                        setPlayerState(PlayerState.PAUSED);
+                        currentTime.set(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : currentTime.get());
+                        return;
+                    }
                     void handleNextTrack({ allowStopOnMissing: true, shouldNavigateToPlayer: false });
                 }
             }}

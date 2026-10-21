@@ -227,6 +227,27 @@ export interface FoliumSong {
 /** The host player state. */
 export type FoliumPlaybackState = 'playing' | 'paused' | 'stopped';
 
+export interface FoliumTransportSnapshot {
+    readonly mediaSong: FoliumSong | null;
+    readonly state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking' | 'error';
+    readonly position: number;
+    readonly duration: number;
+    readonly generation: number;
+    readonly transitioning: boolean;
+}
+
+export interface FoliumPlaybackEventMeta {
+    readonly cause: 'user' | 'command' | 'automatic' | 'recovery';
+    readonly commandId: string | null;
+}
+
+export interface FoliumPlaybackCommandResult {
+    readonly ok: boolean;
+    readonly commandId: string;
+    readonly reason?: 'stage-active' | 'no-media' | 'unsupported' | 'superseded' | 'unavailable';
+    readonly snapshot: FoliumTransportSnapshot;
+}
+
 /** The repeat mode. `all` repeats the queue, `one` the current song. */
 export type FoliumLoopMode = 'off' | 'all' | 'one';
 
@@ -1074,11 +1095,13 @@ export type FoliumPlaybackFailureReason = 'auth' | 'restricted' | 'taken-down' |
 /** Read-only notifications, emitted after the fact. */
 export interface FoliumNotificationEvents {
     /** The displayed song changed. */
-    'playback.songChanged': { readonly song: FoliumSong | null };
+    'playback.songChanged': { readonly song: FoliumSong | null; readonly meta?: FoliumPlaybackEventMeta };
     /** Playing, paused or stopped. */
-    'playback.stateChanged': { readonly state: FoliumPlaybackState };
+    'playback.stateChanged': { readonly state: FoliumPlaybackState; readonly meta?: FoliumPlaybackEventMeta };
     /** The user or a mod seeked; `position` in seconds. */
-    'playback.seeked': { readonly position: number };
+    'playback.seeked': { readonly position: number; readonly meta?: FoliumPlaybackEventMeta };
+    /** A real media element reached its natural end; manual skips and failed loads are excluded. */
+    'playback.ended': { readonly song: FoliumSong; readonly position: number; readonly duration: number };
     /** Lyrics for the displayed song are ready (after `lyrics.transform`). */
     'lyrics.loaded': { readonly song: FoliumSong | null; readonly lines: readonly FoliumLine[] };
     /** The app switched views (e.g. `home`, `player`). */
@@ -1178,6 +1201,15 @@ export interface FoliumBeforePlayEvent {
     replaceWith(song: FoliumSong): void;
 }
 
+export interface FoliumBeforeAutoAdvanceEvent {
+    readonly song: FoliumSong;
+    readonly reason: 'ended' | 'automix' | 'gapless';
+    readonly position: number;
+    readonly duration: number;
+    readonly cancelled: boolean;
+    cancel(): void;
+}
+
 /**
  * EXPERIMENTAL (manifest `experimental: ["omni.hooks"]`): Omni answered with
  * lyrics for an online song. Same line rules as `lyrics.transform`.
@@ -1205,6 +1237,8 @@ export interface FoliumHookEvents {
     'lyrics.transform': FoliumLyricsTransformEvent;
     /** Cancel or replace a song before it plays (async, 1.5 s per handler). */
     'playback.beforePlay': FoliumBeforePlayEvent;
+    /** Runs before the host commits an automatic next-track transition. */
+    'playback.beforeAutoAdvance': FoliumBeforeAutoAdvanceEvent;
     /** Rewrite lyrics Omni fetched (experimental, `omni.hooks`). */
     'omni.lyricsResolved': FoliumOmniLyricsEvent;
     /** Replace the audio URL Omni resolved (experimental, `omni.hooks`). */
@@ -1252,6 +1286,8 @@ export interface FoliumPlaybackService {
         liked: boolean;
         canLike: boolean;
     };
+    /** The actual media transport, distinct from a display song held during an automix transition. */
+    getTransportState(): FoliumTransportSnapshot;
     /** Resumes playback. Needs `playback.control`. */
     play(): void;
     /** Pauses. Needs `playback.control`. */
@@ -1330,6 +1366,14 @@ export interface FoliumPlaybackService {
      * Needs `playback.control`.
      */
     playQueueItem(index: number, expectedRef?: string): Promise<boolean>;
+    /** Stops and unloads the current media without changing the queue. Needs `playback.control`. */
+    clearCurrent(options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>;
+    /** Atomically pauses the current media at a position without resuming playback. Needs `playback.control`. */
+    pauseAt(seconds: number, options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>;
+    /** Sets a bounded media rate for drift correction. Needs `playback.control`. */
+    setPlaybackRate(rate: number, options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>;
+    /** Restores normal playback rate. Needs `playback.control`. */
+    resetPlaybackRate(options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>;
     /**
      * Folium 1.7: replaces the whole play queue with `songs` (by `ref`) in one step, if the queue is still the
      * one you read: `expectedVersion` is the `version` of your last `getQueue` page or `playback.queueChanged`

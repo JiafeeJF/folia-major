@@ -242,6 +242,30 @@ describe('folium services', () => {
         await expect(exported.playQueueItem(0)).rejects.toThrow('playback-unavailable-in-export-context');
     });
 
+    it('exposes transport controls with capability-safe fallbacks', async () => {
+        const actions = {
+            ...fakeActions(),
+            getTransportState: vi.fn(() => ({ mediaSong: null, state: 'paused' as const, position: 4, duration: 10, generation: 2, transitioning: false })),
+            clearCurrent: vi.fn(async (commandId: string) => ({ ok: true as const, commandId, snapshot: actions.getTransportState() })),
+            pauseAt: vi.fn(async (seconds: number, commandId: string) => ({ ok: true as const, commandId, snapshot: { ...actions.getTransportState(), position: seconds } })),
+            setPlaybackRate: vi.fn(async (_rate: number, commandId: string) => ({ ok: true as const, commandId, snapshot: actions.getTransportState() })),
+            resetPlaybackRate: vi.fn(async (commandId: string) => ({ ok: true as const, commandId, snapshot: actions.getTransportState() })),
+        };
+        registerFoliumHostActions(actions);
+        const control = createFoliumPlaybackService(mod({ permissions: ['playback.control'] }), 'main');
+        expect(control.getTransportState()).toMatchObject({ generation: 2, state: 'paused' });
+        await expect(control.pauseAt(-2, { commandId: 'pause-1' })).resolves.toMatchObject({ ok: true, commandId: 'pause-1', snapshot: { position: 0 } });
+        await expect(control.clearCurrent({ commandId: 'clear-1' })).resolves.toMatchObject({ ok: true, commandId: 'clear-1' });
+        await expect(control.setPlaybackRate(1.01, { commandId: 'rate-1' })).resolves.toMatchObject({ ok: true, commandId: 'rate-1' });
+        await expect(control.resetPlaybackRate({ commandId: 'rate-2' })).resolves.toMatchObject({ ok: true, commandId: 'rate-2' });
+        await expect(control.setPlaybackRate(1.1)).rejects.toThrow('only accepts rates from 0.98 to 1.02');
+
+        registerFoliumHostActions(fakeActions());
+        const fallback = createFoliumPlaybackService(mod({ permissions: ['playback.control'] }), 'main');
+        await expect(fallback.clearCurrent({ commandId: 'unsupported-1' })).resolves.toMatchObject({ ok: false, reason: 'unsupported' });
+        await expect(fallback.pauseAt(0, { commandId: 'unsupported-2' })).resolves.toMatchObject({ ok: false, reason: 'unsupported' });
+    });
+
     it('opens the volume panel without a permission', () => {
         const actions = fakeActions();
         registerFoliumHostActions(actions);

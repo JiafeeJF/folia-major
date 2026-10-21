@@ -14,11 +14,11 @@
 - **客户端入口**：[权限一览](#权限一览) · [FoliumContextKind](#foliumcontextkind) · [FoliumHostInfo](#foliumhostinfo) · [FoliumStorage](#foliumstorage) · [FoliumSecretAccess](#foliumsecretaccess) · [FoliumRpc](#foliumrpc) · [FoliumLogger](#foliumlogger) · [FoliumClientApi](#foliumclientapi) · [FoliumClientModule](#foliumclientmodule)
 - **注册表与条目**：[注册表一览](#注册表一览) · [FoliumVisualizerDef](#foliumvisualizerdef) · [FoliumTuningDef](#foliumtuningdef) · [FoliumCommandContext](#foliumcommandcontext) · [FoliumCommandDef](#foliumcommanddef) · [FoliumBackgroundContext](#foliumbackgroundcontext) · [FoliumBackgroundDef](#foliumbackgrounddef) · [FoliumStageSlot](#foliumstageslot) · [FoliumStageLayerDef](#foliumstagelayerdef) · [FoliumSettingsSectionDef](#foliumsettingssectiondef) · [FoliumPlayerPanelTabDef](#foliumplayerpaneltabdef) · [FoliumHomeTabDef](#foliumhometabdef) · [FoliumProgressContext](#foliumprogresscontext) · [FoliumProgressButtonSlot](#foliumprogressbuttonslot) · [FoliumProgressButtonDef](#foliumprogressbuttondef) · [FoliumProgressLayerDef](#foliumprogresslayerdef) · [FoliumStyleDef](#foliumstyledef) · [FoliumRegistryHandle](#foliumregistryhandle) · [FoliumSettingsSectionHandle](#foliumsettingssectionhandle) · [FoliumRegistry](#foliumregistry) · [FoliumRegistries](#foliumregistries)
 - **宿主容器与上下文**：[FoliumMount](#foliummount) · [FoliumSize](#foliumsize) · [FoliumMountHelpers](#foliummounthelpers) · [FoliumPanelContext](#foliumpanelcontext) · [FoliumSettingsPanelContext](#foliumsettingspanelcontext) · [FoliumClock](#foliumclock) · [FoliumSurface](#foliumsurface) · [FoliumAudioBands](#foliumaudiobands) · [FoliumAudio](#foliumaudio) · [FoliumDisplay](#foliumdisplay) · [FoliumStageContext](#foliumstagecontext)
-- **事件**：[事件一览](#事件一览) · [FoliumEventPriority](#foliumeventpriority) · [FoliumPlaybackFailureReason](#foliumplaybackfailurereason) · [FoliumNotificationEvents](#foliumnotificationevents) · [FoliumLyricsTransformEvent](#foliumlyricstransformevent) · [FoliumBeforePlayEvent](#foliumbeforeplayevent) · [FoliumOmniLyricsEvent](#foliumomnilyricsevent) · [FoliumOmniAudioEvent](#foliumomniaudioevent) · [FoliumHookEvents](#foliumhookevents) · [FoliumEventMap](#foliumeventmap) · [FoliumEvents](#foliumevents)
+- **事件**：[事件一览](#事件一览) · [FoliumEventPriority](#foliumeventpriority) · [FoliumPlaybackFailureReason](#foliumplaybackfailurereason) · [FoliumNotificationEvents](#foliumnotificationevents) · [FoliumLyricsTransformEvent](#foliumlyricstransformevent) · [FoliumBeforePlayEvent](#foliumbeforeplayevent) · [FoliumBeforeAutoAdvanceEvent](#foliumbeforeautoadvanceevent) · [FoliumOmniLyricsEvent](#foliumomnilyricsevent) · [FoliumOmniAudioEvent](#foliumomniaudioevent) · [FoliumHookEvents](#foliumhookevents) · [FoliumEventMap](#foliumeventmap) · [FoliumEvents](#foliumevents)
 - **服务**：[FoliumPlaybackService](#foliumplaybackservice) · [FoliumFileHandle](#foliumfilehandle) · [FoliumIconOptions](#foliumiconoptions) · [FoliumUiService](#foliumuiservice) · [FoliumFetchInit](#foliumfetchinit) · [FoliumFetchResponse](#foliumfetchresponse) · [FoliumLyricsService](#foliumlyricsservice) · [FoliumNetService](#foliumnetservice) · [FoliumAccountState](#foliumaccountstate) · [FoliumAccountService](#foliumaccountservice) · [FoliumSongKey](#foliumsongkey) · [FoliumOmniProviderInfo](#foliumomniproviderinfo) · [FoliumOmniPage](#foliumomnipage) · [FoliumSongResolution](#foliumsongresolution) · [FoliumSongDetails](#foliumsongdetails) · [FoliumOmniLyrics](#foliumomnilyrics) · [FoliumCollectionKey](#foliumcollectionkey) · [FoliumCollection](#foliumcollection) · [FoliumOmniErrorCode](#foliumomnierrorcode) · [FoliumOmniService](#foliumomniservice) · [FoliumEqualizerBand](#foliumequalizerband) · [FoliumEqualizerPresetId](#foliumequalizerpresetid) · [FoliumEqualizerCustomId](#foliumequalizercustomid) · [FoliumEqualizerUserMode](#foliumequalizerusermode) · [FoliumEqualizerMode](#foliumequalizermode) · [FoliumEqualizerState](#foliumequalizerstate) · [FoliumEqualizerChangeOrigin](#foliumequalizerchangeorigin) · [FoliumEqualizerRefusal](#foliumequalizerrefusal) · [FoliumEqualizerWriteResult](#foliumequalizerwriteresult) · [FoliumEqualizerService](#foliumequalizerservice)
 - **共享工具**：[FoliumWordSegment](#foliumwordsegment) · [FoliumWordColorRange](#foliumwordcolorrange) · [FoliumLyricsHelpers](#foliumlyricshelpers) · [FoliumThemeHelpers](#foliumthemehelpers)
 - **设置 schema**：[FoliumSettingType](#foliumsettingtype) · [FoliumSettingOption](#foliumsettingoption) · [FoliumSetting](#foliumsetting) · [FoliumSettingValues](#foliumsettingvalues) · [FoliumSettingAccess](#foliumsettingaccess)
-- **数据结构**：[FoliumLyricRuby](#foliumlyricruby) · [FoliumLyricSyllable](#foliumlyricsyllable) · [FoliumLyricAlternateText](#foliumlyricalternatetext) · [FoliumWord](#foliumword) · [FoliumBackgroundVocal](#foliumbackgroundvocal) · [FoliumLineTimingClass](#foliumlinetimingclass) · [FoliumLineTransitionMode](#foliumlinetransitionmode) · [FoliumWordRevealMode](#foliumwordrevealmode) · [FoliumLineRenderHints](#foliumlinerenderhints) · [FoliumLine](#foliumline) · [FoliumTheme](#foliumtheme) · [FoliumSong](#foliumsong) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueItem](#foliumqueueitem) · [FoliumQueueSnapshot](#foliumqueuesnapshot) · [FoliumQueueChange](#foliumqueuechange) · [FoliumQueueReplaceRefusal](#foliumqueuereplacerefusal) · [FoliumQueueReplaced](#foliumqueuereplaced) · [FoliumQueueReplaceRefused](#foliumqueuereplacerefused) · [FoliumQueueReplaceResult](#foliumqueuereplaceresult) · [FoliumPlaybackSnapshot](#foliumplaybacksnapshot) · [FoliumLyricFormat](#foliumlyricformat) · [FoliumLyricsTrack](#foliumlyricstrack) · [FoliumLyricsResult](#foliumlyricsresult) · [FoliumLegacyLyricsResult](#foliumlegacylyricsresult) · [FoliumParsedLyrics](#foliumparsedlyrics)
+- **数据结构**：[FoliumLyricRuby](#foliumlyricruby) · [FoliumLyricSyllable](#foliumlyricsyllable) · [FoliumLyricAlternateText](#foliumlyricalternatetext) · [FoliumWord](#foliumword) · [FoliumBackgroundVocal](#foliumbackgroundvocal) · [FoliumLineTimingClass](#foliumlinetimingclass) · [FoliumLineTransitionMode](#foliumlinetransitionmode) · [FoliumWordRevealMode](#foliumwordrevealmode) · [FoliumLineRenderHints](#foliumlinerenderhints) · [FoliumLine](#foliumline) · [FoliumTheme](#foliumtheme) · [FoliumSong](#foliumsong) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumTransportSnapshot](#foliumtransportsnapshot) · [FoliumPlaybackEventMeta](#foliumplaybackeventmeta) · [FoliumPlaybackCommandResult](#foliumplaybackcommandresult) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueItem](#foliumqueueitem) · [FoliumQueueSnapshot](#foliumqueuesnapshot) · [FoliumQueueChange](#foliumqueuechange) · [FoliumQueueReplaceRefusal](#foliumqueuereplacerefusal) · [FoliumQueueReplaced](#foliumqueuereplaced) · [FoliumQueueReplaceRefused](#foliumqueuereplacerefused) · [FoliumQueueReplaceResult](#foliumqueuereplaceresult) · [FoliumPlaybackSnapshot](#foliumplaybacksnapshot) · [FoliumLyricFormat](#foliumlyricformat) · [FoliumLyricsTrack](#foliumlyricstrack) · [FoliumLyricsResult](#foliumlyricsresult) · [FoliumLegacyLyricsResult](#foliumlegacylyricsresult) · [FoliumParsedLyrics](#foliumparsedlyrics)
 - **实验接口**：[FoliumLayoutRect](#foliumlayoutrect) · [FoliumPlayerObstacle](#foliumplayerobstacle) · [FoliumPlayerLayout](#foliumplayerlayout) · [FoliumRemoteActionDef](#foliumremoteactiondef) · [FoliumRemoteActionsContext](#foliumremoteactionscontext) · [FoliumRemoteActionsDef](#foliumremoteactionsdef) · [FoliumRemoteActionsHandle](#foliumremoteactionshandle) · [FoliumProviderSong](#foliumprovidersong) · [FoliumAudioQuality](#foliumaudioquality) · [FoliumOmniProviderDef](#foliumomniproviderdef) · [FoliumJsonValue](#foliumjsonvalue) · [FoliumPlatformBackend](#foliumplatformbackend) · [FoliumPlatformDescription](#foliumplatformdescription) · [FoliumPlatformResponse](#foliumplatformresponse) · [FoliumPlatformErrorCode](#foliumplatformerrorcode) · [FoliumPlatformService](#foliumplatformservice)
 - **main 入口（Node）**：[FoliumMainModule](#foliummainmodule) · [FoliumMainApi](#foliummainapi) · [FoliumManifest](#foliummanifest) · [FoliumMainStorage](#foliummainstorage) · [FoliumModPaths](#foliummodpaths) · [FoliumMainPaths](#foliummainpaths) · [FoliumMainRuntime](#foliummainruntime) · [FoliumMainRpc](#foliummainrpc) · [FoliumMainRender](#foliummainrender) · [FoliumExportSpec](#foliumexportspec) · [FoliumExportResult](#foliumexportresult)
 - **基础类型**：[FOLIUM_VERSION](#folium_version) · [FoliumId](#foliumid) · [FoliumLabel](#foliumlabel) · [FoliumDisposer](#foliumdisposer)
@@ -708,6 +708,7 @@ interface FoliumStageContext extends FoliumMountHelpers
 | `playback.songChanged` | 通知 | — |
 | `playback.stateChanged` | 通知 | — |
 | `playback.seeked` | 通知 | — |
+| `playback.ended` | 通知 | — |
 | `lyrics.loaded` | 通知 | — |
 | `app.viewChanged` | 通知 | — |
 | `visualizer.modeChanged` | 通知 | — |
@@ -721,6 +722,7 @@ interface FoliumStageContext extends FoliumMountHelpers
 | `equalizer.changed` | 通知 | — |
 | `lyrics.transform` | 钩子 | — |
 | `playback.beforePlay` | 钩子 | — |
+| `playback.beforeAutoAdvance` | 钩子 | — |
 | `omni.lyricsResolved` | 钩子 | `omni.hooks` |
 | `omni.audioSourceResolved` | 钩子 | `omni.hooks` |
 
@@ -752,9 +754,10 @@ Read-only notifications, emitted after the fact.
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
-| `playback.songChanged` | `{ readonly song: FoliumSong \| null }` | The displayed song changed. |
-| `playback.stateChanged` | `{ readonly state: FoliumPlaybackState }` | Playing, paused or stopped. |
-| `playback.seeked` | `{ readonly position: number }` | The user or a mod seeked; `position` in seconds. |
+| `playback.songChanged` | `{ readonly song: FoliumSong \| null; readonly meta?: FoliumPlaybackEventMeta }` | The displayed song changed. |
+| `playback.stateChanged` | `{ readonly state: FoliumPlaybackState; readonly meta?: FoliumPlaybackEventMeta }` | Playing, paused or stopped. |
+| `playback.seeked` | `{ readonly position: number; readonly meta?: FoliumPlaybackEventMeta }` | The user or a mod seeked; `position` in seconds. |
+| `playback.ended` | `{ readonly song: FoliumSong; readonly position: number; readonly duration: number }` | A real media element reached its natural end; manual skips and failed loads are excluded. |
 | `lyrics.loaded` | `{ readonly song: FoliumSong \| null; readonly lines: readonly FoliumLine[] }` | Lyrics for the displayed song are ready (after `lyrics.transform`). |
 | `app.viewChanged` | `{ readonly view: string }` | The app switched views (e.g. `home`, `player`). |
 | `visualizer.modeChanged` | `{ readonly mode: string }` | The lyric animation mode changed. |
@@ -767,7 +770,7 @@ Read-only notifications, emitted after the fact.
 | `account.changed` | `FoliumAccountState` | Folium 1.7: someone signed in to an online source, signed out, or another account took the place of the one there (`accountKey` changed); the payload is the source's new state, as `folium.account.getState(providerId)` reads it. One event per source for all the changes of one task; a source whose status and key end where they began fires none, and a new nickname or avatar alone fires none either. A status that settles from `unknown` (the host finished asking the platform, usually soon after start) fires too, for the same account as before: compare `accountKey` before dropping data. Not emitted in the export window. |
 | `equalizer.changed` | `{ readonly state: FoliumEqualizerState; readonly origin: FoliumEqualizerChangeOrigin }` | Folium 1.7: the equalizer changed: anything `folium.equalizer.getState()` reports (the switch, the mode, the gains, `hostPlaysAudio`, `writable`). One event for all the changes of one task; its origin is the last of them that was not `host`, or `host` when all of them were. Changes that end where they began fire none. Not emitted in the export window. |
 
-相关：[FoliumSong](#foliumsong) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumLine](#foliumline) · [FoliumTheme](#foliumtheme) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueChange](#foliumqueuechange) · [FoliumPlaybackFailureReason](#foliumplaybackfailurereason) · [FoliumAccountState](#foliumaccountstate) · [FoliumEqualizerState](#foliumequalizerstate) · [FoliumEqualizerChangeOrigin](#foliumequalizerchangeorigin)
+相关：[FoliumSong](#foliumsong) · [FoliumPlaybackEventMeta](#foliumplaybackeventmeta) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumLine](#foliumline) · [FoliumTheme](#foliumtheme) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueChange](#foliumqueuechange) · [FoliumPlaybackFailureReason](#foliumplaybackfailurereason) · [FoliumAccountState](#foliumaccountstate) · [FoliumEqualizerState](#foliumequalizerstate) · [FoliumEqualizerChangeOrigin](#foliumequalizerchangeorigin)
 
 ### FoliumLyricsTransformEvent
 
@@ -810,6 +813,19 @@ wait for handlers.
 
 相关：[FoliumSong](#foliumsong)
 
+### FoliumBeforeAutoAdvanceEvent
+
+| 成员 | 类型 | 说明 |
+| --- | --- | --- |
+| `readonly song` | `FoliumSong` |  |
+| `readonly reason` | `'ended' \| 'automix' \| 'gapless'` |  |
+| `readonly position` | `number` |  |
+| `readonly duration` | `number` |  |
+| `readonly cancelled` | `boolean` |  |
+| `cancel()` | `(): void` |  |
+
+相关：[FoliumSong](#foliumsong)
+
 ### FoliumOmniLyricsEvent
 
 EXPERIMENTAL (manifest `experimental: ["omni.hooks"]`): Omni answered with
@@ -842,10 +858,11 @@ Hooks: every handler receives the same event object, in priority order, and may 
 | --- | --- | --- |
 | `lyrics.transform` | `FoliumLyricsTransformEvent` | Rewrite lyrics before they are shown (sync). |
 | `playback.beforePlay` | `FoliumBeforePlayEvent` | Cancel or replace a song before it plays (async, 1.5 s per handler). |
+| `playback.beforeAutoAdvance` | `FoliumBeforeAutoAdvanceEvent` | Runs before the host commits an automatic next-track transition. |
 | `omni.lyricsResolved` | `FoliumOmniLyricsEvent` | Rewrite lyrics Omni fetched (experimental, `omni.hooks`). |
 | `omni.audioSourceResolved` | `FoliumOmniAudioEvent` | Replace the audio URL Omni resolved (experimental, `omni.hooks`). |
 
-相关：[FoliumLyricsTransformEvent](#foliumlyricstransformevent) · [FoliumBeforePlayEvent](#foliumbeforeplayevent) · [FoliumOmniLyricsEvent](#foliumomnilyricsevent) · [FoliumOmniAudioEvent](#foliumomniaudioevent)
+相关：[FoliumLyricsTransformEvent](#foliumlyricstransformevent) · [FoliumBeforePlayEvent](#foliumbeforeplayevent) · [FoliumBeforeAutoAdvanceEvent](#foliumbeforeautoadvanceevent) · [FoliumOmniLyricsEvent](#foliumomnilyricsevent) · [FoliumOmniAudioEvent](#foliumomniaudioevent)
 
 ### FoliumEventMap
 
@@ -880,6 +897,7 @@ which needs `playback.queue`. All of it is unavailable in the export window.
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `getState()` | `(): { song: FoliumSong \| null; state: FoliumPlaybackState; position: number; duration: number; liked: boolean; canLike: boolean; }` | The displayed song, player state, position and duration (seconds), `liked` (the displayed song is liked; false with no song) and `canLike` (toggleLike would act now; the host's own like button greys out otherwise). |
+| `getTransportState()` | `(): FoliumTransportSnapshot` | The actual media transport, distinct from a display song held during an automix transition. |
 | `play()` | `(): void` | Resumes playback. Needs `playback.control`. |
 | `pause()` | `(): void` | Pauses. Needs `playback.control`. |
 | `toggle()` | `(): void` | Play/pause. Needs `playback.control`. |
@@ -898,9 +916,13 @@ which needs `playback.queue`. All of it is unavailable in the export window.
 | `setLoopMode()` | `(mode: FoliumLoopMode): void` | Sets the repeat mode; the host reports the change like its own repeat button does. Setting the mode already in effect does nothing. Needs `playback.control`. |
 | `getQueue()` | `(options?: { offset?: number; limit?: number }): FoliumQueueSnapshot` | A page of the play queue. `limit` defaults to 500, the most one call returns; without `offset` the page is centred on the displayed song. Song refs come from a pool of 5,000 shared with every other song DTO, the least recently handed out dropped first: every ref of the page you just read resolves, so read the pages you show rather than the whole queue. To read a long queue whole, page it while `version` stays the same; a page with another version means the queue changed: start again. |
 | `playQueueItem()` | `(index: number, expectedRef?: string): Promise<boolean>` | Plays queue entry `index`, with the same playback and navigation as clicking it in the host's queue panel; if it fails to play, the retry and skip buttons follow the queue as it is when pressed. In Personal FM, where the panel lists no queue, it plays the entry and FM stays on. With `expectedRef`, resolves false without acting when that position no longer holds that song (the queue changed between your calls). False for an index out of range and during external Stage playback. Needs `playback.control`. |
+| `clearCurrent()` | `(options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>` | Stops and unloads the current media without changing the queue. Needs `playback.control`. |
+| `pauseAt()` | `(seconds: number, options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>` | Atomically pauses the current media at a position without resuming playback. Needs `playback.control`. |
+| `setPlaybackRate()` | `(rate: number, options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>` | Sets a bounded media rate for drift correction. Needs `playback.control`. |
+| `resetPlaybackRate()` | `(options?: { commandId?: string }): Promise<FoliumPlaybackCommandResult>` | Restores normal playback rate. Needs `playback.control`. |
 | `replaceQueue()` | `(songs: readonly FoliumSong[], options: { expectedVersion: string }): Promise<FoliumQueueReplaceResult>` | Folium 1.7: replaces the whole play queue with `songs` (by `ref`) in one step, if the queue is still the one you read: `expectedVersion` is the `version` of your last `getQueue` page or `playback.queueChanged` event. Either the whole queue is replaced or nothing changes (see FoliumQueueReplaceRefusal). Nothing starts playing and the song playing now plays on; when it is not in `songs`, `currentIndex` becomes -1 and the next track is the first of `songs`. Should that song be played again while it is not in the queue (the user retries it after a failure, or the host reloads it), the host may put it back at the front, which reaches you as a `playback.queueChanged` with `byThisMod` false. Songs stay exactly as given, in order: a song listed twice stays twice (the host finds the current song at its first position), and songs their source marks unavailable stay too (the host deals with those when it comes to them, as in any queue). The user's queue-add setting plays no part. Personal FM ends, as when a list is played: the queue becomes `kind: 'queue'`. An empty array empties the queue. A list with the same songs in the same order, outside Personal FM, changes nothing and resolves `replaced` with the same version. At most 5,000 songs, the size of the shared ref pool (see `getQueue`): every ref must still resolve, so collect the songs just before you replace, and mirror a window around the current song rather than a very long queue. A replacement is saved like the host's own edits. The host tells the user which mod replaced the queue and lets them undo it until the queue changes again; an undo reaches you as a `playback.queueChanged` with `byThisMod` false. Your own replacement reaches you once, with `byThisMod` true, if you listen at the time. Rejects with a TypeError (`invalid-arguments: …`) for malformed arguments: `songs` not an array or longer than 5,000, an entry that is not a song DTO from the host (no `ref`, or a DTO that is not a song's, such as a `folium.omni` album), or no `expectedVersion` string. Needs `playback.queue`. |
 
-相关：[FoliumSong](#foliumsong) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueSnapshot](#foliumqueuesnapshot) · [FoliumQueueReplaceResult](#foliumqueuereplaceresult)
+相关：[FoliumSong](#foliumsong) · [FoliumPlaybackState](#foliumplaybackstate) · [FoliumTransportSnapshot](#foliumtransportsnapshot) · [FoliumLoopMode](#foliumloopmode) · [FoliumQueueSnapshot](#foliumqueuesnapshot) · [FoliumPlaybackCommandResult](#foliumplaybackcommandresult) · [FoliumQueueReplaceResult](#foliumqueuereplaceresult)
 
 ### FoliumFileHandle
 
@@ -1681,6 +1703,37 @@ The host player state.
 ```ts
 type FoliumPlaybackState = 'playing' | 'paused' | 'stopped'
 ```
+
+### FoliumTransportSnapshot
+
+| 成员 | 类型 | 说明 |
+| --- | --- | --- |
+| `readonly mediaSong` | `FoliumSong \| null` |  |
+| `readonly state` | `'idle' \| 'loading' \| 'ready' \| 'playing' \| 'paused' \| 'seeking' \| 'error'` |  |
+| `readonly position` | `number` |  |
+| `readonly duration` | `number` |  |
+| `readonly generation` | `number` |  |
+| `readonly transitioning` | `boolean` |  |
+
+相关：[FoliumSong](#foliumsong)
+
+### FoliumPlaybackEventMeta
+
+| 成员 | 类型 | 说明 |
+| --- | --- | --- |
+| `readonly cause` | `'user' \| 'command' \| 'automatic' \| 'recovery'` |  |
+| `readonly commandId` | `string \| null` |  |
+
+### FoliumPlaybackCommandResult
+
+| 成员 | 类型 | 说明 |
+| --- | --- | --- |
+| `readonly ok` | `boolean` |  |
+| `readonly commandId` | `string` |  |
+| `readonly reason?` | `'stage-active' \| 'no-media' \| 'unsupported' \| 'superseded' \| 'unavailable'` |  |
+| `readonly snapshot` | `FoliumTransportSnapshot` |  |
+
+相关：[FoliumTransportSnapshot](#foliumtransportsnapshot)
 
 ### FoliumLoopMode
 

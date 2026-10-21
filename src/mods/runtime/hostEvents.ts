@@ -18,6 +18,7 @@ import { fromFoliumLines, resolveFoliumSongRef, toFoliumLines, toFoliumPlaybackF
 import { dispatchFoliumHookAsync, dispatchFoliumHookSync, emitFoliumEvent, emitFoliumEventPerMod, hasFoliumEventHandlers } from '../folium/events';
 import { findFoliumQueueCurrentIndex, resolveFoliumQueueKind } from './hostQueue';
 import { takeFoliumQueueChange } from './queue/queueVersion';
+import { currentPlaybackCommandId } from './playbackCommandContext';
 
 // src/mods/runtime/hostEvents.ts
 // Main-window wiring between host state and the Folium event bus:
@@ -85,6 +86,11 @@ const toFoliumPlaybackState = (state: PlayerState): FoliumPlaybackState => {
     if (state === PlayerState.PLAYING) return 'playing';
     if (state === PlayerState.PAUSED) return 'paused';
     return 'stopped';
+};
+
+const commandEventMeta = () => {
+    const commandId = currentPlaybackCommandId();
+    return commandId ? { meta: { cause: 'command' as const, commandId } } : {};
 };
 
 type PlaybackStoreState = ReturnType<typeof usePlaybackStore.getState>;
@@ -158,11 +164,11 @@ export const installFoliumHostEvents = () => {
     usePlaybackStore.subscribe((state, previous) => {
         const song = selectDisplaySong(state);
         if (song !== selectDisplaySong(previous)) {
-            emitFoliumEvent('playback.songChanged', { song: toFoliumSong(song) });
+            emitFoliumEvent('playback.songChanged', { song: toFoliumSong(song), ...commandEventMeta() });
         }
         const playerState = selectDisplayPlayerState(state);
         if (playerState !== selectDisplayPlayerState(previous)) {
-            emitFoliumEvent('playback.stateChanged', { state: toFoliumPlaybackState(playerState) });
+            emitFoliumEvent('playback.stateChanged', { state: toFoliumPlaybackState(playerState), ...commandEventMeta() });
         }
         const lyrics = selectDisplayLyrics(state);
         if (lyrics !== selectDisplayLyrics(previous) && !writingRefresh) {
