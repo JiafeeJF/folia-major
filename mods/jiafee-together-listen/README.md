@@ -44,7 +44,7 @@ node --test mods/jiafee-together-listen/test/*.test.*
 node dev/folium/check.mjs '<本模组绝对路径>'
 
 运行本目录 build.ps1 生成安装 ZIP，验证记录见 TESTING.md。后续 Folium 能力需求直接在上游 Issue 中按实际测试证据说明，不再随源码维护独立草稿。源码沿用原补丁项目 GPL-3.0 许可证，见 LICENSE；随包 ws 的 MIT 许可证在 vendor/ws/LICENSE。
-
+```
 ## 原一起听项目
 
 https://github.com/JiafeeJF/Mineradio-Jiafee-Patche 现版本`v2.4.0`
